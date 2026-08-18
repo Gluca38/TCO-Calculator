@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TCO-Rechner: On-Premise vs. Cloud</title>
+<style>
+  :root {
+    --onprem: #3b6ea5;
+    --cloud: #2fa88a;
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e2e6ea;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.6rem;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 800px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .card h2 {
+    font-size: 1.1rem;
+    margin: 0 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .dot.onprem { background: var(--onprem); }
+  .dot.cloud { background: var(--cloud); }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 12px;
+    margin-bottom: 4px;
+  }
+  input[type="number"] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.95rem;
+  }
+  input[type="number"]:focus {
+    outline: 2px solid var(--onprem);
+    outline-offset: 0;
+  }
+  .shared {
+    grid-column: 1 / -1;
+  }
+  .shared .row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .shared .row > div {
+    flex: 1;
+    min-width: 200px;
+  }
+  .results {
+    grid-column: 1 / -1;
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 800px) {
+    .summary { grid-template-columns: 1fr; }
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat .label {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+  }
+  .stat .value {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .stat.onprem .value { color: var(--onprem); }
+  .stat.cloud .value { color: var(--cloud); }
+  .stat.winner {
+    border-color: #22c55e;
+  }
+  .stat.winner .value { color: #16a34a; }
+  #chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 0.9rem;
+  }
+  th, td {
+    text-align: right;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  th:first-child, td:first-child {
+    text-align: left;
+  }
+  thead th {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
+  tr.breakeven td {
+    background: #fff7e0;
+    font-weight: 600;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 32px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TCO-Rechner: On-Premise vs. Cloud</h1>
+  <p class="subtitle">Vergleiche die Gesamtbetriebskosten (Total Cost of Ownership) einer On-Premise-Infrastruktur mit einer Cloud-Lösung über einen frei wählbaren Zeitraum.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2><span class="dot onprem"></span>On-Premise</h2>
+      <label for="op-hardware">Anschaffungskosten Hardware (einmalig, €)</label>
+      <input type="number" id="op-hardware" value="50000" min="0" step="100">
+
+      <label for="op-license">Software-Lizenzen (jährlich, €)</label>
+      <input type="number" id="op-license" value="4000" min="0" step="100">
+
+      <label for="op-maintenance">Wartung &amp; Support (% der Hardware p.a.)</label>
+      <input type="number" id="op-maintenance" value="15" min="0" step="1">
+
+      <label for="op-energy">Strom &amp; Kühlung (jährlich, €)</label>
+      <input type="number" id="op-energy" value="3000" min="0" step="100">
+
+      <label for="op-staff">IT-Personal für Betrieb (jährlich, €)</label>
+      <input type="number" id="op-staff" value="12000" min="0" step="500">
+
+      <label for="op-refresh">Hardware-Ersatz nach (Jahren, 0 = nie)</label>
+      <input type="number" id="op-refresh" value="5" min="0" step="1">
+    </div>
+
+    <div class="card">
+      <h2><span class="dot cloud"></span>Cloud</h2>
+      <label for="cl-setup">Einrichtungs-/Migrationskosten (einmalig, €)</label>
+      <input type="number" id="cl-setup" value="5000" min="0" step="100">
+
+      <label for="cl-subscription">Abo-/Nutzungskosten (monatlich, €)</label>
+      <input type="number" id="cl-subscription" value="1800" min="0" step="50">
+
+      <label for="cl-support">Zusätzlicher Support (jährlich, €)</label>
+      <input type="number" id="cl-support" value="2000" min="0" step="100">
+
+      <label for="cl-growth">Erwartetes jährliches Kostenwachstum (%, z. B. durch Skalierung)</label>
+      <input type="number" id="cl-growth" value="5" min="0" step="1">
+
+      <label for="cl-staff">IT-Personal für Betreuung (jährlich, €)</label>
+      <input type="number" id="cl-staff" value="4000" min="0" step="500">
+    </div>
+
+    <div class="card shared">
+      <h2>Zeitraum</h2>
+      <div class="row">
+        <div>
+          <label for="years">Betrachtungszeitraum (Jahre)</label>
+          <input type="number" id="years" value="5" min="1" max="15" step="1">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="results">
+    <div class="summary">
+      <div class="stat onprem">
+        <div class="label">On-Premise TCO gesamt</div>
+        <div class="value" id="sum-onprem">–</div>
+      </div>
+      <div class="stat cloud">
+        <div class="label">Cloud TCO gesamt</div>
+        <div class="value" id="sum-cloud">–</div>
+      </div>
+      <div class="stat winner">
+        <div class="label">Günstigere Option</div>
+        <div class="value" id="sum-winner">–</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Kumulierte Kosten über die Zeit</h2>
+      <svg id="chart" viewBox="0 0 800 340" preserveAspectRatio="xMidYMid meet"></svg>
+
+      <table id="table">
+        <thead>
+          <tr>
+            <th>Jahr</th>
+            <th>On-Premise (kumuliert)</th>
+            <th>Cloud (kumuliert)</th>
+            <th>Differenz</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>Alle Werte sind Schätzungen. Passe die Eingaben an dein Szenario an.</footer>
+</div>
+
+<script>
+  const ids = [
+    "op-hardware", "op-license", "op-maintenance", "op-energy", "op-staff", "op-refresh",
+    "cl-setup", "cl-subscription", "cl-support", "cl-growth", "cl-staff",
+    "years"
+  ];
+
+  const fmt = (n) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+
+  function computeOnPrem(v) {
+    const years = v.years;
+    const yearly = [];
+    let cumulative = 0;
+    for (let y = 1; y <= years; y++) {
+      let cost = v.opLicense + (v.opHardware * v.opMaintenance / 100) + v.opEnergy + v.opStaff;
+      if (y === 1) cost += v.opHardware;
+      if (v.opRefresh > 0 && y > 1 && (y - 1) % v.opRefresh === 0) {
+        cost += v.opHardware;
+      }
+      cumulative += cost;
+      yearly.push(cumulative);
+    }
+    return yearly;
+  }
+
+  function computeCloud(v) {
+    const years = v.years;
+    const yearly = [];
+    let cumulative = v.clSetup;
+    for (let y = 1; y <= years; y++) {
+      const growthFactor = Math.pow(1 + v.clGrowth / 100, y - 1);
+      const annualSubscription = v.clSubscription * 12 * growthFactor;
+      const cost = annualSubscription + v.clSupport + v.clStaff;
+      cumulative += cost;
+      yearly.push(cumulative);
+    }
+    return yearly;
+  }
+
+  function readValues() {
+    return {
+      opHardware: parseFloat(document.getElementById("op-hardware").value) || 0,
+      opLicense: parseFloat(document.getElementById("op-license").value) || 0,
+      opMaintenance: parseFloat(document.getElementById("op-maintenance").value) || 0,
+      opEnergy: parseFloat(document.getElementById("op-energy").value) || 0,
+      opStaff: parseFloat(document.getElementById("op-staff").value) || 0,
+      opRefresh: parseInt(document.getElementById("op-refresh").value) || 0,
+      clSetup: parseFloat(document.getElementById("cl-setup").value) || 0,
+      clSubscription: parseFloat(document.getElementById("cl-subscription").value) || 0,
+      clSupport: parseFloat(document.getElementById("cl-support").value) || 0,
+      clGrowth: parseFloat(document.getElementById("cl-growth").value) || 0,
+      clStaff: parseFloat(document.getElementById("cl-staff").value) || 0,
+      years: Math.max(1, Math.min(15, parseInt(document.getElementById("years").value) || 1)),
+    };
+  }
+
+  function drawChart(onprem, cloud, years) {
+    const svg = document.getElementById("chart");
+    svg.innerHTML = "";
+    const W = 800, H = 340, padL = 70, padB = 40, padT = 20, padR = 20;
+    const chartW = W - padL - padR;
+    const chartH = H - padT - padB;
+    const maxVal = Math.max(...onprem, ...cloud, 1);
+
+    const ns = "http://www.w3.org/2000/svg";
+    const makeLine = (dataArr, color) => {
+      const points = dataArr.map((val, i) => {
+        const x = padL + (i / (years - 1 || 1)) * chartW;
+        const y = padT + chartH - (val / maxVal) * chartH;
+        return `${x},${y}`;
+      }).join(" ");
+      const polyline = document.createElementNS(ns, "polyline");
+      polyline.setAttribute("points", points);
+      polyline.setAttribute("fill", "none");
+      polyline.setAttribute("stroke", color);
+      polyline.setAttribute("stroke-width", "3");
+      svg.appendChild(polyline);
+
+      dataArr.forEach((val, i) => {
+        const x = padL + (i / (years - 1 || 1)) * chartW;
+        const y = padT + chartH - (val / maxVal) * chartH;
+        const c = document.createElementNS(ns, "circle");
+        c.setAttribute("cx", x);
+        c.setAttribute("cy", y);
+        c.setAttribute("r", "3.5");
+        c.setAttribute("fill", color);
+        svg.appendChild(c);
+      });
+    };
+
+    // gridlines + y labels
+    const steps = 5;
+    for (let i = 0; i <= steps; i++) {
+      const y = padT + chartH - (i / steps) * chartH;
+      const line = document.createElementNS(ns, "line");
+      line.setAttribute("x1", padL);
+      line.setAttribute("x2", W - padR);
+      line.setAttribute("y1", y);
+      line.setAttribute("y2", y);
+      line.setAttribute("stroke", "#e2e6ea");
+      svg.appendChild(line);
+
+      const label = document.createElementNS(ns, "text");
+      label.setAttribute("x", padL - 8);
+      label.setAttribute("y", y + 4);
+      label.setAttribute("text-anchor", "end");
+      label.setAttribute("font-size", "11");
+      label.setAttribute("fill", "#6b7280");
+      label.textContent = fmt((maxVal / steps) * i);
+      svg.appendChild(label);
+    }
+
+    // x labels
+    for (let i = 0; i < years; i++) {
+      const x = padL + (i / (years - 1 || 1)) * chartW;
+      const label = document.createElementNS(ns, "text");
+      label.setAttribute("x", x);
+      label.setAttribute("y", H - padB + 18);
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("font-size", "11");
+      label.setAttribute("fill", "#6b7280");
+      label.textContent = "Jahr " + (i + 1);
+      svg.appendChild(label);
+    }
+
+    makeLine(onprem, "#3b6ea5");
+    makeLine(cloud, "#2fa88a");
+  }
+
+  function renderTable(onprem, cloud, years) {
+    const tbody = document.querySelector("#table tbody");
+    tbody.innerHTML = "";
+    let breakevenYear = null;
+    for (let i = 1; i < years; i++) {
+      const prevDiff = onprem[i - 1] - cloud[i - 1];
+      const currDiff = onprem[i] - cloud[i];
+      if (prevDiff !== 0 && Math.sign(prevDiff) !== Math.sign(currDiff)) {
+        breakevenYear = i + 1;
+      }
+    }
+    for (let y = 0; y < years; y++) {
+      const tr = document.createElement("tr");
+      const diff = onprem[y] - cloud[y];
+      if (breakevenYear === y + 1) tr.classList.add("breakeven");
+      tr.innerHTML = `
+        <td>Jahr ${y + 1}</td>
+        <td>${fmt(onprem[y])}</td>
+        <td>${fmt(cloud[y])}</td>
+        <td>${diff >= 0 ? "Cloud günstiger um " + fmt(Math.abs(diff)) : "On-Premise günstiger um " + fmt(Math.abs(diff))}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function update() {
+    const v = readValues();
+    const onprem = computeOnPrem(v);
+    const cloud = computeCloud(v);
+
+    document.getElementById("sum-onprem").textContent = fmt(onprem[onprem.length - 1]);
+    document.getElementById("sum-cloud").textContent = fmt(cloud[cloud.length - 1]);
+
+    const totalOnprem = onprem[onprem.length - 1];
+    const totalCloud = cloud[cloud.length - 1];
+    const winnerEl = document.getElementById("sum-winner");
+    if (totalOnprem < totalCloud) {
+      winnerEl.textContent = "On-Premise (–" + fmt(totalCloud - totalOnprem) + ")";
+    } else if (totalCloud < totalOnprem) {
+      winnerEl.textContent = "Cloud (–" + fmt(totalOnprem - totalCloud) + ")";
+    } else {
+      winnerEl.textContent = "Gleichstand";
+    }
+
+    drawChart(onprem, cloud, v.years);
+    renderTable(onprem, cloud, v.years);
+  }
+
+  ids.forEach(id => {
+    document.getElementById(id).addEventListener("input", update);
+  });
+
+  update();
+</script>
+</body>
+</html>
